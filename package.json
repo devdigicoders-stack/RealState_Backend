@@ -1,0 +1,34 @@
+{
+  "name": "realstates-crm-backend",
+  "version": "1.0.0",
+  "description": "Multi-Tenant Real Estate CRM Backend API (5 Roles: SuperAdmin, CompanyAdmin, Manager, SalesUser, Agent)",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "seed": "node src/seeders/seed.js",
+    "create:superadmin": "node src/seeders/createSuperAdmin.js"
+  },
+  "keywords": [
+    "realestate",
+    "crm",
+    "multitenant",
+    "saas"
+  ],
+  "author": "DigiCoders Technologies",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^4.22.3",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.24.7",
+    "morgan": "^1.12.1",
+    "multer": "^2.5.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
