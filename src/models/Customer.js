@@ -50,6 +50,28 @@ const customerSchema = new mongoose.Schema(
       default: 'Verified',
       trim: true
     },
+    agentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Agent',
+      default: null,
+      index: true
+    },
+    agentName: {
+      type: String,
+      default: '',
+      trim: true
+    },
+    referredByCustomerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Customer',
+      default: null,
+      index: true
+    },
+    referredByCustomerName: {
+      type: String,
+      default: '',
+      trim: true
+    },
     leadId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Lead'

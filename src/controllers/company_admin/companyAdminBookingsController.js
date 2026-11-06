@@ -1,6 +1,8 @@
 import { Booking } from '../../models/Booking.js';
 import { Plot } from '../../models/Plot.js';
 import { Customer } from '../../models/Customer.js';
+import { Lead } from '../../models/Lead.js';
+import { Agent } from '../../models/Agent.js';
 
 // @desc    Get all bookings for current company
 // @route   GET /api/company-admin/bookings
@@ -88,21 +90,65 @@ export const createBooking = async (req, res) => {
     const numToken = Number(tokenAmount) || Number(String(tokenAmount).replace(/[^0-9]/g, '')) || 51000;
     const numTotal = Number(totalAmount) || Number(String(totalPlotValue).replace(/[^0-9]/g, '')) || 2500000;
 
+    // Check if this customer came via Referral Lead or has Parent Agent
+    const custPhone = customerPhone || phone || '';
+    let resolvedAgentId = req.body.agentId || null;
+    let resolvedAgentName = req.body.agentName || '';
+    let resolvedRefCustomerId = req.body.referredByCustomerId || null;
+    let resolvedRefCustomerName = req.body.referredByCustomerName || '';
+
+    if (custPhone) {
+      const existingLead = await Lead.findOne({ companyId, phone: custPhone }).lean();
+      if (existingLead) {
+        if (!resolvedAgentId && existingLead.agentId) {
+          resolvedAgentId = existingLead.agentId;
+          resolvedAgentName = existingLead.agentName || '';
+        }
+        if (!resolvedRefCustomerId && existingLead.referredByCustomerId) {
+          resolvedRefCustomerId = existingLead.referredByCustomerId;
+          resolvedRefCustomerName = existingLead.referredByCustomerName || '';
+        }
+      }
+    }
+
+    // Auto-calculate agent commission if agent attached
+    let agentCommissionRate = req.body.agentCommissionRate || '';
+    let agentCommissionAmount = Number(req.body.agentCommissionAmount) || 0;
+    let agentCommissionStatus = 'None';
+
+    if (resolvedAgentId) {
+      const agentRec = await Agent.findOne({ _id: resolvedAgentId, companyId }).lean();
+      const rateVal = agentCommissionRate || agentRec?.commissionPercentage || '2.0%';
+      agentCommissionRate = rateVal;
+      const pct = parseFloat(String(rateVal).replace('%', '')) || 2.0;
+      agentCommissionAmount = agentCommissionAmount || Math.round((numTotal * pct) / 100);
+      agentCommissionStatus = 'Pending Approval';
+    }
+
     const booking = await Booking.create({
       companyId,
       bookingId,
       customerName: customerName || customer || 'Customer',
-      customerPhone: customerPhone || phone || '',
+      customerPhone: custPhone,
       projectName: projectName || project || 'Township Project',
       plotNumber: plotNumber || plotNo || 'Plot A-01',
       tokenAmount: numToken,
       totalAmount: numTotal,
       paidAmount: numToken,
       salesExecutiveName: salesExecutiveName || salesExec || 'Direct Sales',
+      branchId: req.body.branchId || null,
+      branchName: req.body.branchName || '',
+      agentId: resolvedAgentId,
+      agentName: resolvedAgentName,
+      agentCommissionRate,
+      agentCommissionAmount,
+      agentCommissionStatus,
+      referredByCustomerId: resolvedRefCustomerId,
+      referredByCustomerName: resolvedRefCustomerName,
       status: 'Pending Approval'
     });
 
-    // Also auto-sync/upsert in dedicated Customer collection
+    // Also auto-sync/upsert in dedicated Customer collection with Agent & Referrer mapping
     if (booking.customerPhone) {
       await Customer.findOneAndUpdate(
         { companyId, phone: booking.customerPhone },
@@ -111,7 +157,11 @@ export const createBooking = async (req, res) => {
           phone: booking.customerPhone,
           companyId,
           stage: 'Token Paid',
-          kycStatus: 'Verified'
+          kycStatus: 'Verified',
+          agentId: resolvedAgentId,
+          agentName: resolvedAgentName,
+          referredByCustomerId: resolvedRefCustomerId,
+          referredByCustomerName: resolvedRefCustomerName
         },
         { upsert: true, new: true }
       );

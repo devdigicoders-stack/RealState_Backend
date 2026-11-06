@@ -52,6 +52,10 @@ export const getCustomers = async (req, res) => {
         balanceDue: balance > 0 ? `₹${balance.toLocaleString('en-IN')}` : '₹0',
         stage: c.stage || (customerBookings.length > 0 ? 'Sale Registered' : 'Active Lead'),
         kycStatus: c.kycStatus || 'Verified',
+        agentId: c.agentId || null,
+        agentName: c.agentName || (customerBookings[0]?.agentName || ''),
+        referredByCustomerId: c.referredByCustomerId || null,
+        referredByCustomerName: c.referredByCustomerName || '',
         totalSiteVisits: customerVisits.length,
         totalCalls: customerCalls.length
       };
@@ -73,7 +77,7 @@ export const getCustomers = async (req, res) => {
 export const createCustomer = async (req, res) => {
   try {
     const companyId = req.user.companyId;
-    const { name, phone, email, city, address, kycStatus, stage, panNumber, aadharNumber } = req.body;
+    const { name, phone, email, city, address, kycStatus, stage, panNumber, aadharNumber, agentId, agentName, referredByCustomerId, referredByCustomerName } = req.body;
 
     if (!name || !phone) {
       return res.status(400).json({ success: false, message: 'Customer name and phone number are required' });
@@ -89,7 +93,11 @@ export const createCustomer = async (req, res) => {
       kycStatus: kycStatus || 'Verified',
       stage: stage || 'Token Paid',
       panNumber: panNumber || '',
-      aadharNumber: aadharNumber || ''
+      aadharNumber: aadharNumber || '',
+      agentId: agentId || null,
+      agentName: agentName || '',
+      referredByCustomerId: referredByCustomerId || null,
+      referredByCustomerName: referredByCustomerName || ''
     });
 
     res.status(201).json({

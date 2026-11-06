@@ -3,6 +3,7 @@ import { Project } from '../../models/Project.js';
 import { User } from '../../models/User.js';
 import { Branch } from '../../models/Branch.js';
 import { Agent } from '../../models/Agent.js';
+import { Customer } from '../../models/Customer.js';
 
 // Helper to auto generate lead ID
 const generateLeadId = async (companyId) => {
@@ -98,6 +99,27 @@ export const createLead = async (req, res) => {
       });
     }
 
+    // Resolve Referrer Customer & Parent Agent if referred
+    let resolvedAgentId = body.agentId || null;
+    let resolvedAgentName = body.agentName || '';
+    let resolvedRefCustomerId = body.referredByCustomerId || null;
+    let resolvedRefCustomerName = body.referredByCustomerName || '';
+    let resolvedRefCustomerPhone = body.referredByCustomerPhone || '';
+
+    if (body.referredByCustomerId) {
+      const refCustomer = await Customer.findOne({ _id: body.referredByCustomerId, companyId }).lean();
+      if (refCustomer) {
+        resolvedRefCustomerId = refCustomer._id;
+        resolvedRefCustomerName = refCustomer.name;
+        resolvedRefCustomerPhone = refCustomer.phone;
+        // Strict SaaS rule: Inherit original agent if not explicitly overridden
+        if (!resolvedAgentId && refCustomer.agentId) {
+          resolvedAgentId = refCustomer.agentId;
+          resolvedAgentName = refCustomer.agentName || '';
+        }
+      }
+    }
+
     const leadId = body.leadId || await generateLeadId(companyId);
 
     const lead = await Lead.create({
@@ -115,8 +137,11 @@ export const createLead = async (req, res) => {
       source: body.source || 'Website',
       campaignName: body.campaignName || '',
       referenceName: body.referenceName || '',
-      agentId: body.agentId || null,
-      agentName: body.agentName || '',
+      agentId: resolvedAgentId,
+      agentName: resolvedAgentName,
+      referredByCustomerId: resolvedRefCustomerId,
+      referredByCustomerName: resolvedRefCustomerName,
+      referredByCustomerPhone: resolvedRefCustomerPhone,
 
       // 3. Property Requirements
       interestedIn: body.interestedIn || 'Plot / Land',

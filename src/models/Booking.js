@@ -79,6 +79,18 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       default: ''
     },
+    // Referral Chain Tracking
+    referredByCustomerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Customer',
+      default: null,
+      index: true
+    },
+    referredByCustomerName: {
+      type: String,
+      default: '',
+      trim: true
+    },
     agentCommissionRate: {
       type: String,
       default: ''

@@ -71,6 +71,23 @@ const leadSchema = new mongoose.Schema(
       default: '',
       trim: true
     },
+    // Referral Chain Tracking (Customer Referral)
+    referredByCustomerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Customer',
+      default: null,
+      index: true
+    },
+    referredByCustomerName: {
+      type: String,
+      default: '',
+      trim: true
+    },
+    referredByCustomerPhone: {
+      type: String,
+      default: '',
+      trim: true
+    },
 
     // 3. Property Requirements
     interestedIn: {
